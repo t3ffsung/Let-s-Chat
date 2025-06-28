@@ -23,7 +23,10 @@
       color: white;
       padding: 10px 20px;
     }
-    .header h2 { margin: 0; font-size: 20px; }
+    .header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
     .icons {
       display: flex;
       gap: 10px;
@@ -78,10 +81,21 @@
       cursor: pointer;
     }
     @media (max-width: 600px) {
-      .header h2 { font-size: 16px; }
-      #chat { height: 300px; margin: 10px; }
-      .input-area { flex-direction: column; gap: 10px; padding: 0 10px 10px; }
-      #messageInput { width: 100%; }
+      .header h2 {
+        font-size: 16px;
+      }
+      #chat {
+        height: 300px;
+        margin: 10px;
+      }
+      .input-area {
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 10px 10px;
+      }
+      #messageInput {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -103,20 +117,20 @@
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.0/firebase-storage-compat.js"></script>
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
+      apiKey: "AIzaSyD0kD5u60XJ3UvnGkpY3i06bmPCZXY-U5g",
       authDomain: "let-s-chat-b2cbf.firebaseapp.com",
       databaseURL: "https://let-s-chat-b2cbf-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "let-s-chat-b2cbf",
       storageBucket: "let-s-chat-b2cbf.appspot.com",
-      messagingSenderId: "458816019393",
-      appId: "1:458816019393:web:ff9c04f68d6bfa95216d40"
+      messagingSenderId: "918765417969",
+      appId: "1:918765417969:web:ecf594c5f7fa5c08a9eec8"
     };
 
     firebase.initializeApp(firebaseConfig);
