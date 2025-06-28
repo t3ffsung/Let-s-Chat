@@ -4,9 +4,8 @@
   <title>Let's Chat 💬</title>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f7f7f7; }
-    #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; background: #fff; }
-    #typing { font-style: italic; color: #555; margin-top: 5px; }
-    input, button { padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box; }
+    #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; background: #fff; margin-bottom: 10px; }
+    input, button { padding: 10px; width: 100%; box-sizing: border-box; }
     button { background: #007bff; color: white; border: none; cursor: pointer; }
     button:hover { background: #0056b3; }
   </style>
@@ -14,88 +13,63 @@
 <body>
   <h2>Long Distance Chat 💙</h2>
   <div id="chat"></div>
-  <p id="typing"></p>
-  <input type="text" id="messageInput" placeholder="Type your message..." oninput="updateTyping()" />
+  <input type="text" id="messageInput" placeholder="Type your message..." />
   <button onclick="sendMessage()">Send</button>
 
-  <!-- Firebase v8 (Global Namespace) -->
+  <!-- Firebase SDKs (v8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Sound -->
-  <audio id="ding" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3" preload="auto"></audio>
-
   <script>
-    window.onload = function () {
-      const user = prompt("Enter your name 👤") || "Anonymous";
-      const typingText = document.getElementById("typing");
-      let typingTimeout;
+    // ✅ Ask for username once
+    const user = prompt("Enter your name:") || "Anonymous";
 
-      const emojiMap = {
-        ":smile:": "😄", ":laugh:": "😂", ":heart:": "❤️", ":sad:": "😢",
-        ":thumbsup:": "👍", ":fire:": "🔥", ":ok:": "👌", ":kiss:": "😘"
-      };
-
-      const parseEmojis = text => {
-        for (const key in emojiMap) {
-          text = text.replaceAll(key, emojiMap[key]);
-        }
-        return text;
-      };
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
-        authDomain: "let-s-chat-b2cbf.firebaseapp.com",
-        databaseURL: "https://let-s-chat-b2cbf-default-rtdb.firebaseio.com",
-        projectId: "let-s-chat-b2cbf",
-        storageBucket: "let-s-chat-b2cbf.appspot.com",
-        messagingSenderId: "458816019393",
-        appId: "1:458816019393:web:ff9c04f68d6bfa95216d40"
-      };
-
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.database();
-
-      const chatBox = document.getElementById("chat");
-      const input = document.getElementById("messageInput");
-      const ding = document.getElementById("ding");
-
-      window.sendMessage = function () {
-        const msg = input.value.trim();
-        if (msg !== "") {
-          const timestamp = new Date().toLocaleTimeString();
-          db.ref("messages").push({
-            name: user,
-            text: msg,
-            time: timestamp
-          });
-          input.value = "";
-          db.ref("typing").set("");
-        }
-      };
-
-      window.updateTyping = function () {
-        db.ref("typing").set(`${user} is typing...`);
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => db.ref("typing").set(""), 1500);
-      };
-
-      db.ref("messages").on("child_added", (snapshot) => {
-        const data = snapshot.val();
-        const isOwn = data.name === user;
-        const msg = `${isOwn ? "You" : data.name} [${data.time}]: ${parseEmojis(data.text)}`;
-        const p = document.createElement("p");
-        p.textContent = msg;
-        chatBox.appendChild(p);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        if (!isOwn) ding.play();
-      });
-
-      db.ref("typing").on("value", (snapshot) => {
-        const status = snapshot.val();
-        typingText.textContent = status && !status.includes(user) ? status : "";
-      });
+    // ✅ Firebase Config (use us-central1 since it's now working)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
+      authDomain: "let-s-chat-b2cbf.firebaseapp.com",
+      databaseURL: "https://let-s-chat-b2cbf-default-rtdb.firebaseio.com",
+      projectId: "let-s-chat-b2cbf",
+      storageBucket: "let-s-chat-b2cbf.appspot.com",
+      messagingSenderId: "458816019393",
+      appId: "1:458816019393:web:ff9c04f68d6bfa95216d40"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const chatBox = document.getElementById("chat");
+    const input = document.getElementById("messageInput");
+
+    // ✅ Send message function
+    function sendMessage() {
+      const msg = input.value.trim();
+      if (msg) {
+        db.ref("messages").push({
+          name: user,
+          text: msg,
+          time: new Date().toLocaleTimeString()
+        });
+        input.value = "";
+      }
+    }
+
+    // ✅ Allow Enter key to send
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // ✅ Listen for new messages
+    db.ref("messages").on("child_added", (snapshot) => {
+      const data = snapshot.val();
+      const isOwn = data.name === user;
+      const msgText = `${isOwn ? "You" : data.name} [${data.time}]: ${data.text}`;
+      const p = document.createElement("p");
+      p.textContent = msgText;
+      chatBox.appendChild(p);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
   </script>
 </body>
 </html>
