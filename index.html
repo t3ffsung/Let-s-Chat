@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Let's Chat 💬</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
@@ -16,11 +14,11 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 10px;
-    }
+    body.dark { background-color: #121212; color: #f0f0f0; }
+    body.theme1 { background: url('https://i.imgur.com/8Y4x6pT.jpg') no-repeat center center fixed; background-size: cover; color: #fff; }
+    h2 { text-align: center; margin-bottom: 10px; }
     #chat {
       flex-grow: 1;
       border: 1px solid #ccc;
@@ -30,47 +28,62 @@
       margin-bottom: 10px;
       height: 60vh;
     }
-    input, button {
+    body.dark #chat { background: #1e1e1e; border-color: #333; }
+    .message {
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 70%;
+      position: relative;
+      word-wrap: break-word;
+    }
+    .own { background: #dcf8c6; margin-left: auto; text-align: right; }
+    .other { background: #eee; margin-right: auto; }
+    body.dark .own { background: #2e7d32; }
+    body.dark .other { background: #333; }
+    .reactions { margin-top: 5px; }
+    .reaction-btn { cursor: pointer; margin: 0 2px; }
+    .controls { font-size: 0.8em; position: absolute; top: 2px; right: 5px; cursor: pointer; }
+    #typing { font-style: italic; color: #555; margin-bottom: 5px; height: 20px; }
+    input, button, select {
       padding: 12px;
       font-size: 16px;
       border-radius: 5px;
       margin-bottom: 10px;
     }
-    input {
-      width: 100%;
-      border: 1px solid #ccc;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      width: 100%;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    @media (min-width: 768px) {
-      body {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-    }
+    input[type="text"] { width: 100%; border: 1px solid #ccc; }
+    button { background-color: #007bff; color: white; border: none; width: 100%; }
+    button:hover { background-color: #0056b3; }
+    #login { display: flex; justify-content: center; }
+    #logoutBtn { background: #dc3545; }
+    #themeSelect { width: 100%; background: #333; color: white; }
   </style>
 </head>
 <body>
-  <h2>Long Distance Chat 💙</h2>
-  <div id="chat"></div>
-  <input type="text" id="messageInput" placeholder="Type your message..." />
-  <button onclick="sendMessage()">Send</button>
+  <h2>Let's Chat 💙</h2>
+  <div id="login">
+    <button onclick="login()">Sign in with Google</button>
+  </div>
+  <div id="chatApp" style="display:none">
+    <button onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    <select id="themeSelect" onchange="changeTheme(this.value)">
+      <option value="">Default</option>
+      <option value="dark">Dark Mode</option>
+      <option value="theme1">Scenic</option>
+    </select>
+    <input type="file" id="imageInput">
+    <div id="chat"></div>
+    <div id="typing"></div>
+    <input type="text" id="messageInput" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+  </div>
 
-  <!-- Firebase v8 SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script>
-    const user = prompt("Enter your name:") || "Anonymous";
-
     const firebaseConfig = {
       apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
       authDomain: "let-s-chat-b2cbf.firebaseapp.com",
@@ -82,37 +95,148 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
+    const storage = firebase.storage();
 
+    let currentUser = null;
     const chatBox = document.getElementById("chat");
     const input = document.getElementById("messageInput");
+    const imageInput = document.getElementById("imageInput");
+    const typingText = document.getElementById("typing");
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+    }
+
+    function changeTheme(theme) {
+      document.body.className = theme;
+      localStorage.setItem("theme", theme);
+    }
+
+    if (localStorage.getItem("darkMode") === "true") document.body.classList.add("dark");
+    if (localStorage.getItem("theme")) document.body.className = localStorage.getItem("theme");
+
+    function login() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider);
+    }
+
+    function logout() {
+      auth.signOut();
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        document.getElementById("login").style.display = "none";
+        document.getElementById("chatApp").style.display = "block";
+        listenForMessages();
+      } else {
+        currentUser = null;
+        document.getElementById("login").style.display = "flex";
+        document.getElementById("chatApp").style.display = "none";
+        chatBox.innerHTML = "";
+      }
+    });
 
     function sendMessage() {
       const msg = input.value.trim();
-      if (msg) {
-        db.ref("messages").push({
-          name: user,
-          text: msg,
-          time: new Date().toLocaleTimeString()
+      const file = imageInput.files[0];
+      if (file) {
+        const ref = storage.ref('images/' + Date.now() + '-' + file.name);
+        ref.put(file).then(snapshot => {
+          return snapshot.ref.getDownloadURL();
+        }).then(url => {
+          pushMessage(msg, url);
         });
-        input.value = "";
+        imageInput.value = "";
+      } else {
+        pushMessage(msg, null);
       }
     }
 
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        sendMessage();
-      }
+    function pushMessage(text, imageUrl) {
+      if (!text && !imageUrl) return;
+      db.ref("messages").push({
+        name: currentUser.displayName,
+        text: text,
+        time: new Date().toLocaleTimeString(),
+        uid: currentUser.uid,
+        imageUrl: imageUrl || null,
+        reactions: {}
+      });
+      input.value = "";
+      db.ref("typing").set("");
+    }
+
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") sendMessage();
+      db.ref("typing").set(`${currentUser.displayName} is typing...`);
+      clearTimeout(window.typingTimeout);
+      window.typingTimeout = setTimeout(() => db.ref("typing").set(""), 1500);
     });
 
-    db.ref("messages").on("child_added", (snapshot) => {
-      const data = snapshot.val();
-      const isOwn = data.name === user;
-      const msgText = `${isOwn ? "You" : data.name} [${data.time}]: ${data.text}`;
-      const p = document.createElement("p");
-      p.textContent = msgText;
-      chatBox.appendChild(p);
+    function editMessage(id, oldText) {
+      const newText = prompt("Edit your message:", oldText);
+      if (newText !== null) db.ref(`messages/${id}/text`).set(newText);
+    }
+
+    function addReaction(msgId, emoji) {
+      db.ref(`messages/${msgId}/reactions/${emoji}`).transaction(current => (current || 0) + 1);
+    }
+
+    function deleteMessage(msgId) {
+      if (confirm("Delete this message?")) db.ref(`messages/${msgId}`).remove();
+    }
+
+    function listenForMessages() {
+      db.ref("messages").on("child_added", snapshot => {
+        displayMessage(snapshot.key, snapshot.val());
+      });
+      db.ref("messages").on("child_changed", snapshot => {
+        document.getElementById(snapshot.key).innerHTML = renderMessage(snapshot.key, snapshot.val());
+      });
+      db.ref("messages").on("child_removed", snapshot => {
+        const el = document.getElementById(snapshot.key);
+        if (el) el.remove();
+      });
+
+      db.ref("typing").on("value", snapshot => {
+        const txt = snapshot.val();
+        typingText.textContent = txt && !txt.includes(currentUser.displayName) ? txt : "";
+      });
+    }
+
+    function displayMessage(id, data) {
+      const div = document.createElement("div");
+      div.id = id;
+      div.className = "message " + (data.uid === currentUser.uid ? "own" : "other");
+      div.innerHTML = renderMessage(id, data);
+      chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
-    });
+    }
+
+    function renderMessage(id, data) {
+      let reactionHTML = "";
+      if (data.reactions) {
+        for (const [emoji, count] of Object.entries(data.reactions)) {
+          reactionHTML += `${emoji} ${count} `;
+        }
+      }
+      return `
+        <strong>${data.name}</strong> [${data.time}]:<br>
+        ${data.text || ''}<br>
+        ${data.imageUrl ? `<img src="${data.imageUrl}" style="max-width:100%; margin-top:5px;">` : ""}
+        <div class='reactions'>
+          <span class='reaction-btn' onclick="addReaction('${id}', '👍')">👍</span>
+          <span class='reaction-btn' onclick="addReaction('${id}', '❤️')">❤️</span>
+          <span class='reaction-btn' onclick="addReaction('${id}', '😂')">😂</span>
+          <div>${reactionHTML}</div>
+        </div>
+        ${data.uid === currentUser.uid ? `<span class='controls' onclick="editMessage('${id}', '${data.text || ''}')">✏️</span> <span class='controls' onclick="deleteMessage('${id}')">🗑️</span>` : ""}
+      `;
+    }
   </script>
 </body>
 </html>
