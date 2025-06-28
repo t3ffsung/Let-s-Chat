@@ -5,7 +5,7 @@
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f7f7f7; }
     #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; background: #fff; }
-    #typing { font-style: italic; color: #555; }
+    #typing { font-style: italic; color: #555; margin-top: 5px; }
     input, button { padding: 10px; margin-top: 10px; width: 100%; box-sizing: border-box; }
     button { background: #007bff; color: white; border: none; cursor: pointer; }
     button:hover { background: #0056b3; }
@@ -18,84 +18,84 @@
   <input type="text" id="messageInput" placeholder="Type your message..." oninput="updateTyping()" />
   <button onclick="sendMessage()">Send</button>
 
-  <!-- Firebase v8 (compatible) -->
+  <!-- Firebase v8 (Global Namespace) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Sound for message arrival -->
-  <audio id="ding" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+  <!-- Sound -->
+  <audio id="ding" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-announce-tones-2861.mp3" preload="auto"></audio>
 
   <script>
-    // Ask for user's name
-    const user = prompt("Enter your name 👤");
-    const typingText = document.getElementById("typing");
-    let typingTimeout;
+    window.onload = function () {
+      const user = prompt("Enter your name 👤") || "Anonymous";
+      const typingText = document.getElementById("typing");
+      let typingTimeout;
 
-    const emojiMap = {
-      ":smile:": "😄",
-      ":laugh:": "😂",
-      ":heart:": "❤️",
-      ":sad:": "😢",
-      ":thumbsup:": "👍",
-      ":fire:": "🔥",
-      ":ok:": "👌",
-      ":kiss:": "😘"
+      const emojiMap = {
+        ":smile:": "😄", ":laugh:": "😂", ":heart:": "❤️", ":sad:": "😢",
+        ":thumbsup:": "👍", ":fire:": "🔥", ":ok:": "👌", ":kiss:": "😘"
+      };
+
+      const parseEmojis = text => {
+        for (const key in emojiMap) {
+          text = text.replaceAll(key, emojiMap[key]);
+        }
+        return text;
+      };
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
+        authDomain: "let-s-chat-b2cbf.firebaseapp.com",
+        databaseURL: "https://let-s-chat-b2cbf-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "let-s-chat-b2cbf",
+        storageBucket: "let-s-chat-b2cbf.appspot.com",
+        messagingSenderId: "458816019393",
+        appId: "1:458816019393:web:ff9c04f68d6bfa95216d40"
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      const chatBox = document.getElementById("chat");
+      const input = document.getElementById("messageInput");
+      const ding = document.getElementById("ding");
+
+      window.sendMessage = function () {
+        const msg = input.value.trim();
+        if (msg !== "") {
+          const timestamp = new Date().toLocaleTimeString();
+          db.ref("messages").push({
+            name: user,
+            text: msg,
+            time: timestamp
+          });
+          input.value = "";
+          db.ref("typing").set("");
+        }
+      };
+
+      window.updateTyping = function () {
+        db.ref("typing").set(`${user} is typing...`);
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => db.ref("typing").set(""), 1500);
+      };
+
+      db.ref("messages").on("child_added", (snapshot) => {
+        const data = snapshot.val();
+        const isOwn = data.name === user;
+        const msg = `${isOwn ? "You" : data.name} [${data.time}]: ${parseEmojis(data.text)}`;
+        const p = document.createElement("p");
+        p.textContent = msg;
+        chatBox.appendChild(p);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        if (!isOwn) ding.play();
+      });
+
+      db.ref("typing").on("value", (snapshot) => {
+        const status = snapshot.val();
+        typingText.textContent = status && !status.includes(user) ? status : "";
+      });
     };
-
-    const parseEmojis = text => {
-      for (const key in emojiMap) {
-        text = text.replaceAll(key, emojiMap[key]);
-      }
-      return text;
-    };
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
-      authDomain: "let-s-chat-b2cbf.firebaseapp.com",
-      databaseURL: "https://let-s-chat-b2cbf-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "let-s-chat-b2cbf",
-      storageBucket: "let-s-chat-b2cbf.appspot.com",
-      messagingSenderId: "458816019393",
-      appId: "1:458816019393:web:ff9c04f68d6bfa95216d40"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const chatBox = document.getElementById("chat");
-    const input = document.getElementById("messageInput");
-    const ding = document.getElementById("ding");
-
-    function sendMessage() {
-      const msg = input.value.trim();
-      if (msg !== "") {
-        const timestamp = new Date().toLocaleTimeString();
-        db.ref("messages").push({
-          name: user,
-          text: msg,
-          time: timestamp
-        });
-        input.value = "";
-        db.ref("typing").set(""); // reset typing status
-      }
-    }
-
-    // Typing status update
-    function updateTyping() {
-      db.ref("typing").set(`${user} is typing...`);
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => db.ref("typing").set(""), 1500);
-    }
-
-    // Display messages
-    db.ref("messages").on("child_added", (snapshot) => {
-      const data = snapshot.val();
-      const isOwn = data.name === user;
-      const msg = `${isOwn ? "You" : data.name} [${data.time}]: ${parseEmojis(data.text)}`;
-
-      const p = document.createElement("p");
-      p.textContent = msg;
-      chatBox.appendChild(p);
-      chatBox.scrollTop = chatBox.scrollHeight;
-
-      if (!isOwn) ding.play(); // sound for inco
+  </script>
+</body>
+</html>
