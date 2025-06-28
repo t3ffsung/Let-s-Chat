@@ -17,7 +17,6 @@
       transition: background 0.3s, color 0.3s;
     }
     body.dark { background-color: #121212; color: #f0f0f0; }
-    body.theme1 { background: url('https://i.imgur.com/8Y4x6pT.jpg') no-repeat center center fixed; background-size: cover; color: #fff; }
     h2 { text-align: center; margin-bottom: 10px; }
     #chat {
       flex-grow: 1;
@@ -45,19 +44,23 @@
     .reaction-btn { cursor: pointer; margin: 0 2px; }
     .controls { font-size: 0.8em; position: absolute; top: 2px; right: 5px; cursor: pointer; }
     #typing { font-style: italic; color: #555; margin-bottom: 5px; height: 20px; }
-    input, button, select {
+    input, button {
       padding: 12px;
       font-size: 16px;
       border-radius: 5px;
       margin-bottom: 10px;
     }
-    input[type="text"] { width: 100%; border: 1px solid #ccc; }
-    button { background-color: #007bff; color: white; border: none; width: 100%; }
+    input[type="text"] { flex-grow: 1; border: 1px solid #ccc; }
+    button { background-color: #007bff; color: white; border: none; }
     button:hover { background-color: #0056b3; }
     #login { display: flex; justify-content: center; }
     #logoutBtn { background: #dc3545; position: absolute; top: 20px; right: 20px; width: auto; padding: 6px 10px; font-size: 14px; }
     #darkModeToggle { position: absolute; top: 20px; right: 80px; width: auto; padding: 6px 10px; font-size: 14px; }
-    #themeSelect { width: 100%; background: #333; color: white; }
+    #messageContainer {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -68,16 +71,13 @@
   <div id="chatApp" style="display:none">
     <button id="darkModeToggle" onclick="toggleDarkMode()">🌙</button>
     <button id="logoutBtn" onclick="logout()">🚪</button>
-    <select id="themeSelect" onchange="changeTheme(this.value)">
-      <option value="">Default</option>
-      <option value="dark">Dark Mode</option>
-      <option value="theme1">Scenic</option>
-    </select>
-    <input type="file" id="imageInput">
     <div id="chat"></div>
     <div id="typing"></div>
-    <input type="text" id="messageInput" placeholder="Type your message...">
-    <button onclick="sendMessage()">Send</button>
+    <div id="messageContainer">
+      <input type="text" id="messageInput" placeholder="Type your message...">
+      <input type="file" id="imageInput">
+      <button onclick="sendMessage()">Send</button>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -110,13 +110,7 @@
       localStorage.setItem("darkMode", document.body.classList.contains("dark"));
     }
 
-    function changeTheme(theme) {
-      document.body.className = theme;
-      localStorage.setItem("theme", theme);
-    }
-
     if (localStorage.getItem("darkMode") === "true") document.body.classList.add("dark");
-    if (localStorage.getItem("theme")) document.body.className = localStorage.getItem("theme");
 
     function login() {
       const provider = new firebase.auth.GoogleAuthProvider();
