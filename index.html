@@ -55,7 +55,8 @@
     button { background-color: #007bff; color: white; border: none; width: 100%; }
     button:hover { background-color: #0056b3; }
     #login { display: flex; justify-content: center; }
-    #logoutBtn { background: #dc3545; }
+    #logoutBtn { background: #dc3545; position: absolute; top: 20px; right: 20px; width: auto; padding: 6px 10px; font-size: 14px; }
+    #darkModeToggle { position: absolute; top: 20px; right: 80px; width: auto; padding: 6px 10px; font-size: 14px; }
     #themeSelect { width: 100%; background: #333; color: white; }
   </style>
 </head>
@@ -65,7 +66,8 @@
     <button onclick="login()">Sign in with Google</button>
   </div>
   <div id="chatApp" style="display:none">
-    <button onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    <button id="darkModeToggle" onclick="toggleDarkMode()">🌙</button>
+    <button id="logoutBtn" onclick="logout()">🚪</button>
     <select id="themeSelect" onchange="changeTheme(this.value)">
       <option value="">Default</option>
       <option value="dark">Dark Mode</option>
@@ -76,7 +78,6 @@
     <div id="typing"></div>
     <input type="text" id="messageInput" placeholder="Type your message...">
     <button onclick="sendMessage()">Send</button>
-    <button id="logoutBtn" onclick="logout()">Logout</button>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
