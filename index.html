@@ -2,39 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Let's Chat 💬</title>
   <style>
     * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 20px;
+      margin: 0; padding: 20px;
       background-color: #f7f7f7;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       min-height: 100vh;
       transition: background 0.3s, color 0.3s;
     }
     body.dark { background-color: #121212; color: #f0f0f0; }
     h2 { text-align: center; margin-bottom: 10px; }
     #chat {
-      flex-grow: 1;
-      border: 1px solid #ccc;
-      padding: 10px;
-      background-color: #fff;
-      overflow-y: auto;
-      margin-bottom: 10px;
-      height: 50vh;
+      flex-grow: 1; border: 1px solid #ccc; padding: 10px;
+      background-color: #fff; overflow-y: auto;
+      margin-bottom: 10px; height: 60vh;
     }
     body.dark #chat { background: #1e1e1e; border-color: #333; }
     .message {
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 8px;
-      max-width: 70%;
-      position: relative;
-      word-wrap: break-word;
+      margin: 5px 0; padding: 10px;
+      border-radius: 8px; max-width: 70%;
+      position: relative; word-wrap: break-word;
     }
     .own { background: #dcf8c6; margin-left: auto; text-align: right; }
     .other { background: #eee; margin-right: auto; }
@@ -45,19 +36,29 @@
     .controls { font-size: 0.8em; position: absolute; top: 2px; right: 5px; cursor: pointer; }
     #typing { font-style: italic; color: #555; margin-bottom: 5px; height: 20px; }
     input, button {
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 5px;
-      margin-bottom: 10px;
+      padding: 12px; font-size: 16px;
+      border-radius: 5px; margin-bottom: 10px;
     }
     input[type="text"] { flex-grow: 1; border: 1px solid #ccc; }
     button { background-color: #007bff; color: white; border: none; }
     button:hover { background-color: #0056b3; }
     #login { display: flex; justify-content: center; }
-    #logoutBtn { background: #dc3545; position: absolute; top: 20px; right: 20px; width: auto; padding: 6px 10px; font-size: 14px; }
-    #darkModeToggle { position: absolute; top: 20px; right: 80px; width: auto; padding: 6px 10px; font-size: 14px; }
-    #messageContainer { display: flex; gap: 5px; align-items: center; }
-    #youtube-player { margin: 10px auto; display: block; }
+    #logoutBtn {
+      background: #dc3545;
+      position: absolute; top: 20px; right: 20px;
+      width: auto; padding: 6px 10px; font-size: 14px;
+    }
+    #darkModeToggle {
+      position: absolute; top: 20px; right: 80px;
+      width: auto; padding: 6px 10px; font-size: 14px;
+    }
+    #watchTogetherBtn {
+      position: absolute; top: 20px; right: 140px;
+      width: auto; padding: 6px 10px; font-size: 14px;
+    }
+    #messageContainer {
+      display: flex; gap: 5px; align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -66,12 +67,9 @@
     <button onclick="login()">Sign in with Google</button>
   </div>
   <div id="chatApp" style="display:none">
+    <button id="watchTogetherBtn" onclick="openWatchTogether()">🎬</button>
     <button id="darkModeToggle" onclick="toggleDarkMode()">🌙</button>
     <button id="logoutBtn" onclick="logout()">🚪</button>
-
-    <!-- YouTube player section -->
-    <div id="youtube-player"></div>
-
     <div id="chat"></div>
     <div id="typing"></div>
     <div id="messageContainer">
@@ -81,15 +79,10 @@
     </div>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
-  <!-- YouTube API -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCHnFg8yVU8tBVChPTUlvsov6DLC80e0kc",
@@ -115,14 +108,15 @@
       document.body.classList.toggle("dark");
       localStorage.setItem("darkMode", document.body.classList.contains("dark"));
     }
-
+    function openWatchTogether() {
+      window.open("https://w2g.tv/", "_blank"); // Optionally you can integrate your own HTML
+    }
     if (localStorage.getItem("darkMode") === "true") document.body.classList.add("dark");
 
     function login() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider);
     }
-
     function logout() {
       auth.signOut();
     }
@@ -133,7 +127,6 @@
         document.getElementById("login").style.display = "none";
         document.getElementById("chatApp").style.display = "block";
         listenForMessages();
-        initYouTubeSync();
       } else {
         currentUser = null;
         document.getElementById("login").style.display = "flex";
@@ -147,8 +140,11 @@
       const file = imageInput.files[0];
       if (file) {
         const ref = storage.ref('images/' + Date.now() + '-' + file.name);
-        ref.put(file).then(snapshot => snapshot.ref.getDownloadURL())
-          .then(url => pushMessage(msg, url));
+        ref.put(file).then(snapshot => {
+          return snapshot.ref.getDownloadURL();
+        }).then(url => {
+          pushMessage(msg, url);
+        });
         imageInput.value = "";
       } else {
         pushMessage(msg, null);
@@ -200,7 +196,6 @@
         const el = document.getElementById(snapshot.key);
         if (el) el.remove();
       });
-
       db.ref("typing").on("value", snapshot => {
         const txt = snapshot.val();
         typingText.textContent = txt && !txt.includes(currentUser.displayName) ? txt : "";
@@ -235,43 +230,6 @@
         </div>
         ${data.uid === currentUser.uid ? `<span class='controls' onclick="editMessage('${id}', '${data.text || ''}')">✏️</span> <span class='controls' onclick="deleteMessage('${id}')">🗑️</span>` : ""}
       `;
-    }
-
-    // YouTube Sync
-    let player;
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('youtube-player', {
-        height: '250',
-        width: '100%',
-        videoId: 'dQw4w9WgXcQ', // Default video (can change)
-        events: {
-          'onReady': initYouTubeSync,
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-
-    function initYouTubeSync() {
-      db.ref("youtubeState").on("value", snapshot => {
-        const state = snapshot.val();
-        if (!player || !state) return;
-
-        if (state.playing) {
-          player.seekTo(state.time, true);
-          player.playVideo();
-        } else {
-          player.pauseVideo();
-        }
-      });
-    }
-
-    function onPlayerStateChange(event) {
-      if (!currentUser || !player) return;
-      const state = {
-        playing: event.data === YT.PlayerState.PLAYING,
-        time: player.getCurrentTime()
-      };
-      db.ref("youtubeState").set(state);
     }
   </script>
 </body>
